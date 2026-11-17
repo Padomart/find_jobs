@@ -1,0 +1,20 @@
+# Отдельный проект со своим git-репозиторием
+side-jobs/
+
+# Сгенерированные результаты и состояние
+boards/out/
+ru/out/
+state/
+*.tmp
+*.bak
+
+# Секреты и личные данные
+.env
+.env.*
+!.env.example
+ru/resume.txt
+
+# Python / macOS
+__pycache__/
+*.pyc
+.DS_Store

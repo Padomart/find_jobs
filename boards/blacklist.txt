@@ -1,0 +1,34 @@
+# Крупные или неинтересные компании - не попадут в результаты.
+# Формат: название, токен борда или ссылка на борд; по одному в строке. "#" - комментарий.
+# Крупные компании и так отсекаются по --max-jobs (больше 50 вакансий), здесь - те, у кого
+# вакансий бывает мало, но компания всё равно большая.
+Reddit
+Mozilla
+GitLab
+Spotify
+Datadog
+Cloudflare
+Stripe
+Coinbase
+Airbnb
+Dropbox
+Twilio
+Shopify
+Atlassian
+Elastic
+HashiCorp
+MongoDB
+Grafana Labs
+Databricks
+Snowflake
+Okta
+Robinhood
+Plaid
+Ramp
+Brex
+Notion
+Figma
+Discord
+Canonical
+Wikimedia Foundation
+Justworks

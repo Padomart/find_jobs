@@ -1,0 +1,141 @@
+# Настройки find_ru_jobs.py. Секреты (токены, ключи) сюда НЕ пишутся - только переменные окружения.
+# Формат - простой YAML: "ключ: значение", списки через "- ". PyYAML не обязателен.
+
+# Поисковые запросы (используются источниками с поиском по тексту)
+queries:
+  - golang
+  - go разработчик
+  - backend go
+
+# Заголовок вакансии должен содержать хотя бы одно из (регулярные выражения, без учёта регистра)
+title_include:
+  - golang
+  - '\bgo\b'
+  - backend
+  - back-end
+  - бэкенд
+  - бекенд
+  - серверн
+
+# Если заголовок/описание без Go, вакансия всё равно пройдёт, если это backend на одном из этих языков
+also_ok_langs:
+  - python
+
+# Отсев по заголовку (senior/lead/руководители и не-backend роли)
+title_exclude:
+  - senior
+  - '\bsr\b'
+  - lead
+  - лид
+  - старш
+  - ведущ
+  - главн
+  - руковод
+  - head
+  - principal
+  - staff
+  - architect
+  - архитект
+  - director
+  - директор
+  - '\bcto\b'
+  - frontend
+  - фронтенд
+  - devops
+  - '\bqa\b'
+  - тестиров
+  - аналитик
+  - android
+  - '\bios\b'
+  - стажер
+  - стажёр
+  - intern
+
+# Если в заголовке есть одно из этих слов, слова из title_exclude (кроме senior/lead) не отсекают.
+# Senior/Lead/ведущий/старший в заголовке отсекаются всегда - и "Middle+/Senior" тоже.
+level_ok:
+  - junior
+  - middle
+  - джун
+  - мидл
+
+# Требовать удалёнку (в т.ч. "удалённо по России")
+require_remote: true
+
+# Отсеивать, если в тексте требуется опыт больше N лет ("от 6 лет", "6+ years").
+# У кандидата ~2 года; 3-5 лет допустимо для Middle.
+max_years_required: 5
+
+# Отсеивать вакансии старше N дней (если дата известна)
+max_age_days: 30
+
+# Крупные компании: не отсеиваются, но получают -1 к эвристической оценке и пометку "крупная"
+big_companies:
+  - Яндекс
+  - VK
+  - МТС
+  - Сбер
+  - Т-Банк
+  - Тинькофф
+  - Ozon
+  - Авито
+  - Wildberries
+  - Касперск
+  - Альфа-Банк
+  - ВТБ
+  - X5
+
+# Источники: enabled true/false и параметры
+sources:
+  habr:
+    enabled: true
+    # qid уровня на Хабр Карьере: 3 = Junior, 4 = Middle
+    qids:
+      - 3
+      - 4
+  superjob:
+    enabled: true
+    # Каталог 48 = "IT, Интернет, связь, телеком"
+    catalogues: 48
+    period: 30
+    count: 100
+  trudvsem:
+    enabled: true
+    limit: 100
+  telegram:
+    enabled: true
+    # Сколько страниц ленты t.me/s/<канал> читать (по ~20 постов)
+    pages: 2
+    channels:
+      - forgoandrust
+      - runello_rus_goland
+      - backend_frontend_jobs
+      - jobs_juniors_remote
+      - opento_dev
+      - devops_jobs_feed
+  yandex:
+    enabled: true
+    # skill 74 = Go в справочнике навыков Яндекса
+    skills:
+      - 74
+    max_pages: 3
+  vk:
+    enabled: true
+  mts:
+    enabled: true
+    # API МТС без поисковых фильтров (их запрещает robots.txt), поэтому читаем постранично и фильтруем у себя
+    max_pages: 25
+
+# AI-оценка (--ai): DeepSeek, OpenAI-совместимый API
+ai:
+  base_url: https://api.deepseek.com
+  model: deepseek-chat
+  resume_file: resume.txt   # путь относительно папки ru/
+  max_calls: 40
+
+# Отправка в JobSync (--push-jobsync)
+jobsync:
+  min_score: 6
+  budget_per_hour: 50
+  check_duplicates: true
+  ledger: jobsync_ledger.json   # лежит в state/, общий с boards (лимит JobSync один на всё)
