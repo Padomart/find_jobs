@@ -17,7 +17,7 @@ state/jobsync_ledger.json (лимит 60/час один на все инстр�
 
 Переменные окружения (все необязательны):
   SUPERJOB_KEY      ключ приложения SuperJob (api.superjob.ru/register)
-  DEEPSEEK_API_KEY  ключ DeepSeek для --ai
+  DEEPSEEK_API_KEY  ключ DeepSeek для --ai (резюме - resume.txt в корне проекта)
   JOBSYNC_URL, JOBSYNC_TOKEN  для --push-jobsync
 
 Примеры (из корня папки):
@@ -32,7 +32,6 @@ state/jobsync_ledger.json (лимит 60/час один на все инстр�
 import argparse
 import datetime as dt
 import email.utils
-import hashlib
 import html
 import json
 import os
@@ -45,7 +44,8 @@ import xml.etree.ElementTree as ET
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))  # корень проекта - чтобы работал `from common import ...`
 
-from common import JOBSYNC_LEDGER, STATE_DIR  # noqa: E402
+from common import JOBSYNC_LEDGER, ROOT, STATE_DIR  # noqa: E402
+from common import ai_score as _ai  # noqa: E402
 from common import filters as _filters  # noqa: E402
 from common.filters import strip_html  # noqa: E402,F401
 from common.httpclient import Http as _Http, HttpError, NetError  # noqa: E402,F401
@@ -676,76 +676,12 @@ def load_seen(path):
 # AI-оценка (DeepSeek, OpenAI-совместимый chat/completions)
 # =====================================================================
 
-AI_PROMPT = """Ты помогаешь кандидату отбирать вакансии. Резюме кандидата:
----
-{resume}
----
-Оцени вакансию для этого кандидата. Ответь ТОЛЬКО JSON-объектом:
-{{"score": 0-10 (целое, насколько подходит), "level": "junior|middle|senior|lead|unknown",
-"remote": true/false/null (можно ли работать удалённо, в т.ч. из-за пределов России),
-"go_stack": true/false (основной язык - Go), "reason": "одна короткая фраза по-русски",
-"red_flags": ["короткие пункты: например только РФ-резидентам, офис, нужен опыт 5+ лет, серая зарплата"]}}
-
-Вакансия:
-Источник: {source}
-Компания: {company}
-Название: {title}
-Локация: {location}; удалёнка по данным источника: {remote}; зарплата: {salary}
-Текст:
-{description}"""
-
-
 def ai_score(http, cfg, jobs_list, seen, limit):
-    key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
-    if not key:
-        log("AI: нет DEEPSEEK_API_KEY - оценка пропущена")
-        return 0
+    """AI-оценка - общий модуль common/ai_score.py (кэш state/ai_scores.json, резюме resume.txt в корне)."""
     ai = cfg.get("ai") or {}
-    try:
-        with open(os.path.join(HERE, ai.get("resume_file", "resume.txt")), encoding="utf-8") as f:
-            resume = f.read().strip()[:4000]
-    except FileNotFoundError:
-        log(f"AI: нет файла ru/{ai.get('resume_file', 'resume.txt')} - создайте краткое резюме (5-15 строк). Оценка пропущена")
-        return 0
-    url = ai.get("base_url", "https://api.deepseek.com").rstrip("/") + "/chat/completions"
-    calls = 0
-    for j in jobs_list:
-        cache_key = hashlib.sha1((j["url"] + j["title"]).encode()).hexdigest()[:16]
-        if cache_key in seen["ai"]:
-            j["ai"] = seen["ai"][cache_key]
-            continue
-        if calls >= limit:
-            continue
-        prompt = AI_PROMPT.format(resume=resume, source=j["source"], company=j["company"], title=j["title"],
-                                  location=j["location"] or "?", remote=j["remote"], salary=j["salary"] or "не указана",
-                                  description=j["description"][:3500] or "(нет описания)")
-        body = {"model": ai.get("model", "deepseek-chat"), "temperature": 0.2,
-                "response_format": {"type": "json_object"},
-                "messages": [{"role": "user", "content": prompt}]}
-        calls += 1
-        try:
-            text, _ = http.request(url, headers={"Authorization": f"Bearer {key}"}, data=body, method="POST",
-                                   timeout=90)
-            content = json.loads(text)["choices"][0]["message"]["content"]
-            content = re.sub(r"^```(?:json)?|```$", "", content.strip()).strip()
-            r = json.loads(content)
-            res = {"score": max(0, min(10, int(float(r.get("score", 0))))), "level": str(r.get("level", ""))[:20],
-                   "remote": r.get("remote"), "go_stack": bool(r.get("go_stack")),
-                   "reason": str(r.get("reason", ""))[:300],
-                   "red_flags": [str(x)[:120] for x in (r.get("red_flags") or [])][:6]}
-        except HttpError as e:
-            if e.code in (401, 402, 403):
-                log(f"AI: HTTP {e.code} - ключ неверен или закончился баланс DeepSeek. Оценка остановлена.")
-                break
-            log(f"AI: HTTP {e.code} для «{j['title']}» - пропуск")
-            continue
-        except (NetError, ValueError, KeyError, IndexError, TypeError) as e:
-            log(f"AI: не удалось оценить «{j['title']}»: {e}")
-            continue
-        j["ai"] = res
-        seen["ai"][cache_key] = res
-    log(f"AI: оплачено запросов: {calls}")
-    return calls
+    rf = ai.get("resume_file") or "resume.txt"
+    path = rf if os.path.isabs(rf) else os.path.join(ROOT, rf)
+    return _ai.score_jobs(http, jobs_list, limit=limit, settings=ai, resume_path=path, extra_cache=seen.get("ai"))
 
 
 # =====================================================================
@@ -829,10 +765,7 @@ def write_report(path, jobs_list, stats, run_at, args, ai_used):
         if j.get("rf_limits"):
             L.append("   - ⚠️ ограничения: " + ", ".join(("⛔ " if x in RF_HARD else "") + x for x in j["rf_limits"]))
         if j.get("ai"):
-            a = j["ai"]
-            fl = "; ".join(a.get("red_flags") or [])
-            L.append(f"   - AI: {a['score']}/10, {a.get('level') or '?'}, Go: {'да' if a.get('go_stack') else 'нет'}"
-                     f" — {md(a.get('reason'))}" + (f" ⚠️ {md(fl)}" if fl else ""))
+            L.append(f"   - {md(_ai.fmt_ai(j['ai']))}")
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(L) + "\n")
 
@@ -857,7 +790,7 @@ def build_parser():
     p.add_argument("--any-format", action="store_true", help="не требовать удалёнку")
     p.add_argument("--all", action="store_true", help="показывать и уже виденные в прошлых запусках")
     p.add_argument("--check", action="store_true", help="только проверить источники и показать статистику, без записи файлов")
-    p.add_argument("--ai", action="store_true", help="AI-оценка через DeepSeek (DEEPSEEK_API_KEY, resume.txt)")
+    p.add_argument("--ai", action="store_true", help="AI-оценка через DeepSeek (DEEPSEEK_API_KEY, resume.txt в корне; общий модуль common/ai_score.py)")
     p.add_argument("--ai-limit", type=int, help="максимум платных AI-запросов за запуск (ai.max_calls в конфиге)")
     p.add_argument("--push-jobsync", action="store_true", help="добавить вакансии выше порога в JobSync через MCP")
     p.add_argument("--push-min-score", type=float, help="порог оценки для JobSync (jobsync.min_score)")

@@ -12,7 +12,8 @@ state/
 .env
 .env.*
 !.env.example
-ru/resume.txt
+resume.txt
+resume*.pdf
 
 # Python / macOS
 __pycache__/

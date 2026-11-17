@@ -41,6 +41,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))  # корень проекта - чтобы работал `from common import ...`
 
 from common import ROOT, STATE_DIR  # noqa: E402
+from common import ai_score as AI  # noqa: E402
 from common.filters import DEFAULT_MAX_YEARS, strip_html, years_required  # noqa: E402
 from common.httpclient import Http, NetError, NotFound  # noqa: E402
 from common.state import Cache, load_json, save_json  # noqa: E402
@@ -909,7 +910,7 @@ def evaluate(cand, provider, token, ident, jobs, a, blocked, conf):
         "sources": cand["sources"], "confidence": conf, "total_jobs": len(jobs), "matching": len(matching),
         "go": go, "remote": remote_ok, "relocation": reloc, "score": round(score, 2), "stack_go": stack_go,
         "watch": not matching,
-        "jobs": [{k: j.get(k) for k in JOB_KEYS} for j in matching[:8]],
+        "jobs": [dict({k: j.get(k) for k in JOB_KEYS}, _text=(j.get("text") or "")[:4000]) for j in matching[:8]],
     }
 
 
@@ -1043,9 +1044,35 @@ def md_escape(s):
     return (s or "").replace("|", "/").replace("\n", " ").strip()
 
 
+def run_ai(found, noats, a):
+    """AI-оценка вакансий бордов и вакансий без борда. Сначала Go и remote - чтобы лимит ушёл на главное.
+    Борды и список без борда пересортировываются по AI-оценке."""
+    pool = []
+    for r in found:
+        for j in r["jobs"]:
+            j.update(company=r["company"], source=r["provider"], text=j.get("_text") or "")
+            pool.append(j)
+    pool += noats
+    pool.sort(key=lambda j: (-(j.get("go") or 0), not j.get("remote"), j.get("stale", False)))
+    AI.score_jobs(HTTP, pool, limit=a.ai_limit)
+    for r in found:
+        for j in r["jobs"]:
+            j.pop("text", None)
+            j.pop("company", None)
+            j.pop("source", None)
+        sc = [j["ai"]["score"] for j in r["jobs"] if j.get("ai")]
+        r["ai_max"] = max(sc) if sc else None
+        r["jobs"].sort(key=lambda j: -(j.get("ai") or {}).get("score", -1))
+    found.sort(key=lambda r: (r["watch"], -(r["ai_max"] if r["ai_max"] is not None else -1), -r["score"]))
+    noats.sort(key=lambda j: (bool(j.get("stale")), -(j.get("ai") or {}).get("score", -1), -(j["go"] or 0)))
+
+
 def write_outputs(found, noats, a, stats, run_at):
     os.makedirs(a.out_dir, exist_ok=True)
     P = lambda name: os.path.join(a.out_dir, name)
+    for r in found:  # текст вакансий нужен был только для AI-оценки
+        for j in r["jobs"]:
+            j.pop("_text", None)
     with open(P("boards.json"), "w", encoding="utf-8") as f:
         json.dump(found, f, ensure_ascii=False, indent=2)
     with open(P("jobs_noats.json"), "w", encoding="utf-8") as f:
@@ -1092,13 +1119,13 @@ def write_outputs(found, noats, a, stats, run_at):
         if not rows:
             L.append("_ничего не найдено_")
             continue
-        L.append("| # | Компания | Новая | Увер. | Вакансий | Подходит | Go | Remote | Релок. | Борд |")
-        L.append("|---|---|---|---|---|---|---|---|---|---|")
+        L.append("| # | Компания | Новая | Увер. | Вакансий | Подходит | Go | Remote | Релок. | AI | Борд |")
+        L.append("|---|---|---|---|---|---|---|---|---|---|---|")
         for i, r in enumerate(rows, 1):
             nm = md_escape(r['company']) + (" _(наблюдение: Go в стеке)_" if r.get("watch") else "")
             L.append(f"| {i} | {nm} | {'да' if r['new'] else ''} | {r['confidence']} | "
                      f"{r['total_jobs']} | {r['matching']} | {r['go']} | {r['remote']} | {r['relocation']} | "
-                     f"[{r['token']}]({r['url']}) |")
+                     f"{r.get('ai_max') if r.get('ai_max') is not None else ''} | [{r['token']}]({r['url']}) |")
     L += ["", "## Подходящие вакансии по компаниям", ""]
     for r in found:
         L.append(f"### {md_escape(r['company'])} - {r['provider']} ({r['confidence']}"
@@ -1110,6 +1137,8 @@ def write_outputs(found, noats, a, stats, run_at):
         for j in r["jobs"]:
             L.append(f"- [{md_escape(j['title'])}]({j['url']}) - {md_escape(j['location']) or '?'} - {fmt_date(j)}"
                      + (f" - {fmt_flags(j)}" if fmt_flags(j) else ""))
+            if j.get("ai"):
+                L.append(f"  - {md_escape(AI.fmt_ai(j['ai']))}")
         L.append("")
     if noats:
         L += ["## Вакансии без борда Greenhouse/Lever/Ashby (из открытых API)", "",
@@ -1119,6 +1148,8 @@ def write_outputs(found, noats, a, stats, run_at):
             rep = f" - репост ({len(j['reposts'])} раз)" if j.get("reposts") else ""
             L.append(f"- **{md_escape(j['company'])}** - [{md_escape(j['title'])}]({j['url']}) - "
                      f"{md_escape(j['location']) or '?'} - {fmt_date(j)}{rep} - {fmt_flags(j)} - источник: {j['source']}")
+            if j.get("ai"):
+                L.append(f"  - {md_escape(AI.fmt_ai(j['ai']))}")
         if len(noats) > 80:
             L.append(f"- ... и ещё {len(noats) - 80} в jobs_noats.json")
     with open(P(a.report), "w", encoding="utf-8") as f:
@@ -1185,6 +1216,11 @@ def build_parser():
     g.add_argument("--stale-days", type=int, default=30, metavar="N",
                    help="помечать как старые объявления, опубликованные больше N дней назад (30)")
     g.add_argument("--prefer-python", action="store_true", help="поднимать в рейтинге вакансии с Python")
+    g.add_argument("--ai", action="store_true",
+                   help="AI-оценка подходящих вакансий под резюме (DeepSeek: DEEPSEEK_API_KEY, resume.txt в корне; "
+                        "общий модуль common/ai_score.py, кэш state/ai_scores.json)")
+    g.add_argument("--ai-limit", type=int, default=40, metavar="N",
+                   help="максимум платных AI-запросов за запуск (40); оценки из кэша бесплатны")
     g.add_argument("--blacklist", default=os.path.join(HERE, "blacklist.txt"),
                    help="файл с крупными/неинтересными компаниями (по умолчанию boards/blacklist.txt)")
     g.add_argument("--watchlist", action="store_true",
@@ -1324,6 +1360,9 @@ def main(argv=None):
 
     noats = dedup_noats([dict({k: j.get(k) for k in JOB_KEYS + ("company", "source", "tags", "text")})
                          for c in items if c["key"] not in board_cands for j in c["jobs"]], a.stale_days)
+
+    if a.ai:
+        run_ai(found, noats, a)
 
     save_state(state_path, state)
     stats = {"candidates": len(items), "probed": probed, "errors": errors, "providers": prov_stats}

@@ -130,7 +130,7 @@ sources:
 ai:
   base_url: https://api.deepseek.com
   model: deepseek-chat
-  resume_file: resume.txt   # путь относительно папки ru/
+  resume_file: resume.txt   # путь относительно корня проекта (общий с boards)
   max_calls: 40
 
 # Отправка в JobSync (--push-jobsync)

@@ -399,6 +399,8 @@ def main(argv=None):
     p.add_argument("--resend", action="store_true",
                    help="повторно отправить УЖЕ отправленные вакансии (по учёту) - обновить их в JobSync "
                         "через upsert, без дублей; например, чтобы дописать описание")
+    p.add_argument("--min-ai", type=float, metavar="N",
+                   help="только вакансии с AI-оценкой не ниже N (запустите поиск с --ai); без оценки - пропускаются")
     p.add_argument("--url", action="append", default=[], metavar="URL",
                    help="только вакансии с этой ссылкой (можно несколько раз)")
     p.add_argument("--dry-run", action="store_true", help="ничего не отправлять, только показать")
@@ -411,6 +413,7 @@ def main(argv=None):
     todo = [j for j in jobs if j.get("url") and j.get("company") and j.get("title")
             and ((j["url"] in ledger.pushed) if a.resend else (j["url"] not in ledger.pushed))
             and (not a.url or j["url"] in a.url)
+            and (a.min_ai is None or (j.get("ai") or {}).get("score", -1) >= a.min_ai)
             and (not a.go_only or j.get("go") or j.get("go_role")) and (not a.remote_only or j.get("remote"))][: a.limit]
     if a.resend:
         log(f"--resend: уже отправленных вакансий в {os.path.basename(a.input)}: {len(todo)}")

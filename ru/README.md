@@ -36,7 +36,7 @@ python3 ru/find_ru_jobs.py --push-jobsync --dry-run
 | Путь | Что |
 |---|---|
 | `ru/config_ru.yaml` | запросы, фильтры (`max_years_required: 5`), источники, AI, JobSync |
-| `ru/resume.txt` | краткое резюме для `--ai` (создайте сами; путь задаётся в конфиге относительно `ru/`) |
+| `resume.txt` (в корне) | краткое резюме для `--ai`, общее с boards (путь — `ai.resume_file` в конфиге, относительно корня) |
 | `ru/out/jobs_ru.json`, `ru/out/report_ru.md` | результаты последнего запуска |
 | `state/seen_ru.json` | уже виденные вакансии и кэш AI-оценок |
 | `state/jobsync_ledger.json` | общий с boards учёт лимита JobSync |
@@ -80,7 +80,7 @@ trudvsem 17 → 0, superjob пропущен. Итого 10 вакансий; с
 ## Что требует вашего решения
 
 - **SuperJob** — зарегистрировать приложение на api.superjob.ru и задать `SUPERJOB_KEY`.
-- **DeepSeek** — для `--ai` создать `ru/resume.txt` (5–15 строк) и задать `DEEPSEEK_API_KEY`.
+- **DeepSeek** — для `--ai` создать `resume.txt` в корне (5–15 строк) и задать `DEEPSEEK_API_KEY`.
   Платные вызовы — только по прошедшим фильтры вакансиям, не больше `ai.max_calls`, оценки кэшируются
   в `state/seen_ru.json`.
 - **JobSync** — `JOBSYNC_URL`, `JOBSYNC_TOKEN`. С проверкой дублей одна вакансия стоит 2 вызова лимита
