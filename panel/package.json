@@ -1,0 +1,28 @@
+{
+  "name": "find-jobs-panel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "mygo dev",
+    "dev:ios": "mygo dev -platform ios",
+    "dev:android": "mygo dev -platform android",
+    "build": "mygo build",
+    "generate": "mygo generate",
+    "dev:web": "vite",
+    "build:web": "vite build",
+    "typecheck": "svelte-check --tsgo --tsconfig ./tsconfig.json",
+    "test": "go test ./core"
+  },
+  "dependencies": {
+    "mygo-runtime": "^0.10.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@typescript/native": "npm:typescript@7",
+    "mygo-cli": "^0.10.0",
+    "svelte": "^5.58.0",
+    "svelte-check": "^4.7.8",
+    "typescript": "~6",
+    "vite": "^8"
+  }
+}
