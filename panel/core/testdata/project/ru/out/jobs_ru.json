@@ -1,0 +1,4 @@
+[
+ {"title": "Junior Go Developer", "company": "ITK academy", "url": "https://career.habr.com/vacancies/1", "source": "habr", "location": "Казань", "remote": true, "salary": "от 75 000 до 125 000 ₽", "published_at": "2026-11-13T11:27:12+00:00", "description": "Можно удалённо. #Golang", "extra": {}, "new": true, "big": false, "go_role": 2, "rf_limits": [], "score": 7.0, "heuristic": 8.5, "ai": {"score": 7, "level": "junior", "remote": null, "go_stack": true, "reason": "подходит", "red_flags": []}},
+ {"title": "Разработчик на Go", "company": "Яндекс", "url": "https://t.me/c/2", "source": "telegram", "location": "", "remote": true, "salary": "", "published_at": "", "description": "Удалённо (РФ)", "extra": {}, "big": true, "go_role": 2, "rf_limits": ["только РФ"], "score": 6.5}
+]

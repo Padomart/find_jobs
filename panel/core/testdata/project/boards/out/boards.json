@@ -1,0 +1,6 @@
+[
+ {"company": "Enveritas", "provider": "greenhouse", "url": "https://boards.greenhouse.io/enveritas", "token": "enveritas", "jobs": [
+  {"title": "Backend Software Engineer - Python/Postgres", "location": "Global - Remote Work", "url": "https://job-boards.greenhouse.io/enveritas/jobs/1", "remote": true, "regions": ["global"], "go": 0, "py": true, "level": "", "years": null, "relocation": null, "visa": null, "posted": "2024-03-15T17:05:35+00:00", "restrict": "", "text_incomplete": false, "age_days": 600, "stale": true}
+ ]},
+ {"company": "Empty Co", "provider": "ashby", "url": "https://jobs.ashbyhq.com/empty", "token": "empty", "jobs": []}
+]

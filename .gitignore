@@ -4,7 +4,13 @@ side-jobs/
 # Сгенерированные результаты и состояние
 boards/out/
 ru/out/
+**/out/
+# кроме тестовых фикстур панели (выдуманные вакансии, без личных данных)
+!panel/core/testdata/project/**/out/
 state/
+*.db
+*.db-*
+*.sqlite*
 *.tmp
 *.bak
 
@@ -13,7 +19,20 @@ state/
 .env.*
 !.env.example
 resume.txt
+resume*.txt
 resume*.pdf
+resume*.docx
+
+# Сборки и зависимости (panel/: Bun, Vite, mygo)
+node_modules/
+dist/
+*.app
+*.dmg
+panel/build/
+panel/.mygo/
+panel/.svelte-check/
+# TypeScript-клиент: mygo dev / mygo build генерируют его из Go-кода
+panel/src/mygo.ts
 
 # Python / macOS
 __pycache__/
