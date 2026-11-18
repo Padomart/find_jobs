@@ -47,8 +47,35 @@ python3 boards/find_boards.py --seed companies.txt --max-jobs 40
 | `report.md` | статистика провайдеров за запуск, таблица бордов, подходящие вакансии со ссылками и датой публикации (⚠️ старое, ⚠️ текст неполный, репост) |
 | `boards.json` | все найденные борды с деталями |
 | `jobs_noats.json` | подходящие вакансии у компаний без борда — для `common/jobsync_push.py` |
+| `board_jobs.json` | вакансии с найденных бордов с полным описанием (формат ниже) |
 
 Повторный запуск не проверяет заново токены без борда (21 день, `--recheck-days`) и помечает новые компании.
+
+## `board_jobs.json`: вакансии бордов с описанием
+
+Одна запись на вакансию (дубли по URL убраны): все подходящие вакансии каждого найденного борда, а у бордов
+с пометкой «наблюдение: Go в стеке» — до 10 инженерных вакансий, где упоминается Go (фильтр названий
+`--title`/`--exclude`, без фильтров уровня и региона; у таких записей `watch: true`). `boards.json` остаётся
+прежним, в нём описаний нет.
+
+Формат совместим с `jobs_noats.json` (те же ключи: `company`, `title`, `url`, `location`, `remote`,
+`regions`, `go`, `py`, `level`, `years`, `relocation`, `visa`, `posted`, `restrict`, `stale`, `age_days`,
+`text`, `ai` при `--ai`), поэтому файл можно отдать `common/jobsync_push.py --input boards/out/board_jobs.json`.
+Дополнительно:
+
+| Поле | Что |
+|---|---|
+| `description` | описание: plain-текст без HTML и битой кодировки, абзацы через пустую строку, пункты списков — строки `- …`, до 20 000 символов (длиннее — обрезано по абзацу с пометкой `[…текст обрезан]`); `text` — то же самое |
+| `source`, `provider` | `greenhouse`, `lever` или `ashby` |
+| `url` | прямая ссылка на вакансию; `board_url`, `board_token` — борд компании |
+| `published_at` | дата публикации из API: Greenhouse `first_published`, Lever `createdAt`, Ashby `publishedAt` |
+| `updated_at` | дата обновления: только у Greenhouse (`updated_at`), у Lever и Ashby API её не отдаёт — пусто |
+| `confidence` | насколько уверены, что борд этой компании: `direct`, `domain`, `name`, `weak`, `text` |
+| `watch` | `true` — борд из наблюдения, вакансия не прошла фильтры уровня/региона |
+
+Откуда берётся текст: Greenhouse — `content` (HTML, экранированный дважды), Lever — `openingPlain`,
+`descriptionBodyPlain`, списки `lists` (HTML) и `additionalPlain`, Ashby — `descriptionHtml`
+(или `descriptionPlain`).
 
 ## Вакансии без ATS → JobSync
 

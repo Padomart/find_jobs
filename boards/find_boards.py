@@ -42,7 +42,7 @@ sys.path.insert(0, os.path.dirname(HERE))  # корень проекта - чт�
 
 from common import ROOT, STATE_DIR  # noqa: E402
 from common import ai_score as AI  # noqa: E402
-from common.filters import DEFAULT_MAX_YEARS, strip_html, years_required  # noqa: E402
+from common.filters import DEFAULT_MAX_YEARS, clean_text, strip_html, years_required  # noqa: E402
 from common.httpclient import Http, NetError, NotFound  # noqa: E402
 from common.state import Cache, load_json, save_json  # noqa: E402
 
@@ -383,6 +383,60 @@ def classify_job(j, blocked):
 # Провайдеры: нормализуем в {name, website, jobs:[{title, location, ...}]}
 # =====================================================================
 
+DESC_LIMIT = 20000  # символов описания в board_jobs.json
+
+
+def board_text(raw, limit=DESC_LIMIT):
+    """Описание вакансии для board_jobs.json: HTML (или plain) -> читаемый текст с абзацами и списками "- ",
+    без тегов и битой кодировки, с нормализованными пробелами, не длиннее limit."""
+    if not raw:
+        return ""
+    s = html.unescape(raw)
+    if "&lt;" in s or "&amp;" in s:  # Greenhouse экранирует HTML дважды
+        s = html.unescape(s)
+    if "<" in s and ">" in s:
+        s = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", s)
+        s = re.sub(r"(?i)<li[^>]*>", "\n- ", s)
+        s = re.sub(r"(?i)<br\s*/?>", "\n", s)
+        s = re.sub(r"(?i)</(p|div|h[1-6]|ul|ol|section|blockquote|table|tr)>|<(p|h[1-6]|ul|ol|div)(\s[^>]*)?>", "\n\n", s)
+        s = re.sub(r"<[^>]+>", " ", s)
+        s = html.unescape(s)
+        s = re.sub(r"\n-[ \t\xa0]*(?:\n[ \t\xa0]*)+", "\n- ", s)  # <li><p>текст</p></li>: маркер к тексту
+    s = clean_text(s)
+    lines, out = [l.strip() for l in s.split("\n")], []
+    for l in lines:
+        l = re.sub(r"^[•·▪●◦]\s*", "- ", l)
+        if not l:
+            if out and out[-1] != "":
+                out.append("")
+            continue
+        # строки списка идут подряд, остальные строки - отдельные абзацы
+        if l.startswith("- ") and len(out) >= 2 and out[-1] == "" and out[-2].startswith("- "):
+            out.pop()
+        if out and out[-1] != "" and not (l.startswith("- ") and out[-1].startswith("- ")):
+            out.append("")
+        out.append(l)
+    s = "\n".join(out).strip()
+    if len(s) > limit:
+        cut = s[:limit]
+        p = cut.rfind("\n\n")
+        s = (cut[:p] if p > limit * 0.7 else cut.rsplit(" ", 1)[0]).rstrip() + "\n\n[…текст обрезан]"
+    return s
+
+
+def lever_text(j):
+    """Lever: вступление, основное описание, списки (в них HTML) и дополнение - в один текст."""
+    parts = [board_text(j.get("openingPlain") or ""),
+             board_text(j.get("descriptionBodyPlain") or j.get("descriptionPlain") or "")]
+    for x in j.get("lists") or []:
+        body = board_text(x.get("content") or "")
+        if body and not body.lstrip().startswith("- "):
+            body = "- " + body
+        parts.append(((x.get("text") or "").strip() + "\n\n" + body).strip())
+    parts.append(board_text(j.get("additionalPlain") or ""))
+    return board_text("\n\n".join(p for p in parts if p))
+
+
 def _gh_jobs(token):
     d = HTTP.json(f"https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true", timeout=40)
     if not isinstance(d, dict) or "jobs" not in d:
@@ -397,8 +451,10 @@ def _gh_jobs(token):
             "remote": None,
             "url": j.get("absolute_url") or "",
             "text": strip_html(j.get("content", "")),
+            "desc": board_text(j.get("content", "")),
             "company": j.get("company_name") or "",
             "posted": to_iso(j.get("first_published") or j.get("updated_at")),
+            "updated": to_iso(j.get("updated_at")),
         })
     return jobs
 
@@ -438,6 +494,7 @@ def fetch_lever(token, ident):
             "country": j.get("country") or "",
             "url": j.get("hostedUrl") or "",
             "text": text,
+            "desc": lever_text(j),
             "posted": to_iso(j.get("createdAt")),
         })
     if not ident:
@@ -472,6 +529,7 @@ def fetch_ashby(token, ident):
             "country": addr,
             "url": j.get("jobUrl") or "",
             "text": j.get("descriptionPlain") or strip_html(j.get("descriptionHtml") or ""),
+            "desc": board_text(j.get("descriptionHtml") or "") or board_text(j.get("descriptionPlain") or ""),
             "posted": to_iso(j.get("publishedAt")),
         })
     if not ident:
@@ -904,6 +962,15 @@ def evaluate(cand, provider, token, ident, jobs, a, blocked, conf):
              + leveled + CONF_SCORE.get(conf, 0) - len(jobs) / 25)
     if a.prefer_python:
         score += min(sum(1 for j in matching if j["py"]), 3)
+    company = ident.get("name") or cand["name"]
+    if matching:
+        keep = matching
+    else:  # "наблюдение: Go в стеке" - инженерные вакансии с Go (фильтр названий, но без уровня/региона)
+        keep = [mark_age(classify_job(dict(j), blocked), a.stale_days) for j in jobs
+                if (GO_TITLE_RE.search(j["title"]) or text_has_go(j["text"][:8000]))
+                and title_re.search(j["title"]) and not excl_re.search(j["title"])
+                and not is_frontend_only(j["title"])][:10]
+    board_jobs = [board_job_record(j, provider, token, company, conf, watch=not matching) for j in keep]
     return {
         "provider": provider, "token": token, "url": BOARD_URL[provider].format(t=token),
         "company": ident.get("name") or cand["name"], "candidate": cand["name"], "website": ident.get("website") or "",
@@ -911,7 +978,22 @@ def evaluate(cand, provider, token, ident, jobs, a, blocked, conf):
         "go": go, "remote": remote_ok, "relocation": reloc, "score": round(score, 2), "stack_go": stack_go,
         "watch": not matching,
         "jobs": [dict({k: j.get(k) for k in JOB_KEYS}, _text=(j.get("text") or "")[:4000]) for j in matching[:8]],
+        "_board_jobs": board_jobs,  # -> board_jobs.json, в boards.json не пишется
     }
+
+
+def board_job_record(j, provider, token, company, conf, watch):
+    """Запись board_jobs.json: формат jobs_noats.json (text, posted, regions, go, py ...) плюс полное описание."""
+    desc = j.get("desc") or board_text(j.get("text") or "")
+    rec = {k: j.get(k) for k in JOB_KEYS}
+    rec.update({
+        "company": company, "source": provider, "provider": provider, "board_token": token,
+        "board_url": BOARD_URL[provider].format(t=token), "confidence": conf, "watch": watch,
+        "description": desc, "text": desc,
+        "published_at": j.get("posted") or "", "updated_at": j.get("updated") or "",
+        "go": j.get("go") or 0, "py": bool(j.get("py")),
+    })
+    return rec
 
 
 def probe_candidate(cand, a, state, blocked, blacklist):
@@ -1070,9 +1152,19 @@ def run_ai(found, noats, a):
 def write_outputs(found, noats, a, stats, run_at):
     os.makedirs(a.out_dir, exist_ok=True)
     P = lambda name: os.path.join(a.out_dir, name)
+    board_jobs = []
     for r in found:  # текст вакансий нужен был только для AI-оценки
+        ai = {j["url"]: j["ai"] for j in r["jobs"] if j.get("ai")}
         for j in r["jobs"]:
             j.pop("_text", None)
+        for bj in r.pop("_board_jobs", []):
+            if bj["url"] in ai:
+                bj["ai"] = ai[bj["url"]]
+            board_jobs.append(bj)
+    seen_urls = set()
+    board_jobs = [b for b in board_jobs if b["url"] and not (b["url"] in seen_urls or seen_urls.add(b["url"]))]
+    with open(P("board_jobs.json"), "w", encoding="utf-8") as f:
+        json.dump(board_jobs, f, ensure_ascii=False, indent=2)
     with open(P("boards.json"), "w", encoding="utf-8") as f:
         json.dump(found, f, ensure_ascii=False, indent=2)
     with open(P("jobs_noats.json"), "w", encoding="utf-8") as f:
