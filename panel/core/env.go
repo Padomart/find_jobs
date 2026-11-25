@@ -115,7 +115,7 @@ func ToolVersions(python string) Versions {
 
 // IsProjectRoot says whether dir looks like the find_jobs project.
 func IsProjectRoot(dir string) bool {
-	for _, f := range []string{"boards/find_boards.py", "ru/find_ru_jobs.py", "common/jobsync_push.py"} {
+	for _, f := range []string{"en/find_boards.py", "ru/find_ru_jobs.py", "common/jobsync_push.py"} {
 		if _, err := os.Stat(filepath.Join(dir, f)); err != nil {
 			return false
 		}
@@ -124,7 +124,7 @@ func IsProjectRoot(dir string) bool {
 }
 
 // BlacklistPath is the list of big companies boards skips.
-const BlacklistPath = "boards/blacklist.txt"
+const BlacklistPath = "en/blacklist.txt"
 
 func ReadBlacklist(root string) (string, error) {
 	b, err := os.ReadFile(filepath.Join(root, BlacklistPath))

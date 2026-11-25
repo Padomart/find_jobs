@@ -10,12 +10,12 @@ import (
 )
 
 // The files the scripts write, relative to the project root.
-var ImportFiles = []string{"boards/out/jobs_noats.json", "boards/out/boards.json", "ru/out/jobs_ru.json"}
+var ImportFiles = []string{"en/out/jobs_noats.json", "en/out/boards.json", "ru/out/jobs_ru.json"}
 
 // LedgerFile is the ledger of common/jobsync_push.py: what was sent and the spent budget.
 const LedgerFile = "state/jobsync_ledger.json"
 
-// ---- the scripts' formats (see boards/find_boards.py and ru/find_ru_jobs.py) ----
+// ---- the scripts' formats (see en/find_boards.py and ru/find_ru_jobs.py) ----
 
 type rawAI struct {
 	Score    float64  `json:"score"`
@@ -41,7 +41,7 @@ func (b *flexBool) UnmarshalJSON(d []byte) error {
 	return nil
 }
 
-// boards/out/jobs_noats.json and the jobs inside boards/out/boards.json
+// en/out/jobs_noats.json and the jobs inside en/out/boards.json
 type boardsJob struct {
 	Company        string   `json:"company"`
 	Title          string   `json:"title"`

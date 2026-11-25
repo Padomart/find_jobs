@@ -1,4 +1,4 @@
-"""Общий код для boards/ и ru/: HTTP, состояние, текстовые фильтры, клиент JobSync MCP."""
+"""Общий код для en/ и ru/: HTTP, состояние, текстовые фильтры, клиент JobSync MCP."""
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

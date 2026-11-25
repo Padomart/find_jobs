@@ -176,7 +176,7 @@ func (p *Panel) ChooseRoot(ctx context.Context) (string, error) {
 // SetRoot opens the project at root.
 func (p *Panel) SetRoot(root string) error {
 	if !core.IsProjectRoot(root) {
-		return fmt.Errorf("в %s нет boards/find_boards.py, ru/find_ru_jobs.py и common/jobsync_push.py — "+
+		return fmt.Errorf("в %s нет en/find_boards.py, ru/find_ru_jobs.py и common/jobsync_push.py — "+
 			"выберите корень проекта find_jobs", root)
 	}
 	p.open(root)
@@ -382,7 +382,7 @@ func (p *Panel) SaveSettings(s core.Settings) error {
 	return a.SaveSettings(s)
 }
 
-// SaveBlacklist writes boards/blacklist.txt.
+// SaveBlacklist writes en/blacklist.txt.
 func (p *Panel) SaveBlacklist(text string) error {
 	a, err := p.core()
 	if err != nil {

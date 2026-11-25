@@ -106,7 +106,7 @@
             <button class="primary" onclick={() => start(s.id)}>Запустить</button>
           {/if}
         </div>
-        <code class="mono cmd">python3 {s.id === "boards" ? "boards/find_boards.py" : "ru/find_ru_jobs.py"} {settings?.[s.key] ?? ""}</code>
+        <code class="mono cmd">python3 {s.id === "boards" ? "en/find_boards.py" : "ru/find_ru_jobs.py"} {settings?.[s.key] ?? ""}</code>
       </div>
     {/each}
   </div>

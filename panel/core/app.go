@@ -30,7 +30,7 @@ func DBPath(root string) string { return filepath.Join(root, "state", "panel", "
 // NewApp opens the panel for the project at root.
 func NewApp(root string) (*App, error) {
 	if !IsProjectRoot(root) {
-		return nil, fmt.Errorf("%s не похоже на папку find_jobs (нет boards/find_boards.py, ru/find_ru_jobs.py "+
+		return nil, fmt.Errorf("%s не похоже на папку find_jobs (нет en/find_boards.py, ru/find_ru_jobs.py "+
 			"или common/jobsync_push.py) — укажите путь в Настройках", root)
 	}
 	st, err := OpenStore(DBPath(root))
@@ -280,7 +280,7 @@ func (a *App) SaveSettings(s Settings) error {
 	return nil
 }
 
-// SaveBlacklist writes boards/blacklist.txt.
+// SaveBlacklist writes en/blacklist.txt.
 func (a *App) SaveBlacklist(text string) error { return WriteBlacklist(a.Root, text) }
 
 // QueueLoop sends the queue whenever the budget frees up, until ctx ends.

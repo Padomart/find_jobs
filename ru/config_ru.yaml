@@ -130,7 +130,7 @@ sources:
 ai:
   base_url: https://api.deepseek.com
   model: deepseek-chat
-  resume_file: resume.txt   # путь относительно корня проекта (общий с boards)
+  resume_file: resume.txt   # путь относительно корня проекта (общий с en/)
   max_calls: 40
 
 # Отправка в JobSync (--push-jobsync)
@@ -138,4 +138,4 @@ jobsync:
   min_score: 6
   budget_per_hour: 50
   check_duplicates: true
-  ledger: jobsync_ledger.json   # лежит в state/, общий с boards (лимит JobSync один на всё)
+  ledger: jobsync_ledger.json   # лежит в state/, общий с en/ (лимит JobSync один на всё)

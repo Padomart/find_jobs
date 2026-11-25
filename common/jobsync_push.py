@@ -3,14 +3,14 @@
 Единый клиент JobSync MCP: add_jobs_batch батчами до 10, find_job, учёт лимита.
 
 Лимит JobSync - 60 вызовов инструментов в час на ВСЕ токены, и add_jobs_batch тратит по
-одному вызову на каждую вакансию. Поэтому оба инструмента (boards/ и ru/) ведут один общий
+одному вызову на каждую вакансию. Поэтому оба инструмента (en/ и ru/) ведут один общий
 учёт state/jobsync_ledger.json: что отправлено и сколько потрачено за последний час.
 
 Настройка - только переменные окружения, в коде и файлах ничего не хранится:
   JOBSYNC_URL    адрес JobSync (с /api/mcp или без)
   JOBSYNC_TOKEN  токен из Settings -> MCP Access
 
-Запуск как программы - отправить вакансии без ATS, найденные boards/find_boards.py:
+Запуск как программы - отправить вакансии без ATS, найденные en/find_boards.py:
   python3 common/jobsync_push.py --dry-run
   python3 common/jobsync_push.py --limit 20 --go-only
   python3 common/jobsync_push.py --input ru/out/jobs_ru.json --limit 5
@@ -302,10 +302,10 @@ def push_jobs(jobs, to_item, *, budget=50, batch=BATCH_MAX, check_existing=False
     return added
 
 
-# ---------- CLI: вакансии без ATS из boards/out/jobs_noats.json ----------
+# ---------- CLI: вакансии без ATS из en/out/jobs_noats.json ----------
 
 def job_header(j):
-    """Служебные строки описания. Понимает оба формата: boards/out/jobs_noats.json (text, regions, go, py,
+    """Служебные строки описания. Понимает оба формата: en/out/jobs_noats.json (text, regions, go, py,
     years, posted) и ru/out/jobs_ru.json (description, salary, published_at, rf_limits, go_role, ai)."""
     if j.get("remote"):
         regs = ", ".join(j.get("regions") or [])
@@ -382,8 +382,8 @@ def main(argv=None):
                                 add_help=False)
     p._optionals.title = "параметры"
     p.add_argument("-h", "--help", action="help", help="показать эту справку и выйти")
-    p.add_argument("--input", default=os.path.join(ROOT, "boards", "out", "jobs_noats.json"),
-                   help="файл вакансий (по умолчанию boards/out/jobs_noats.json)")
+    p.add_argument("--input", default=os.path.join(ROOT, "en", "out", "jobs_noats.json"),
+                   help="файл вакансий (по умолчанию en/out/jobs_noats.json)")
     p.add_argument("--ledger", default=JOBSYNC_LEDGER, help="общий учёт лимита (state/jobsync_ledger.json)")
     p.add_argument("--limit", type=int, default=30, help="сколько вакансий отправить за запуск (30)")
     p.add_argument("--budget", type=int, default=50,
@@ -407,7 +407,7 @@ def main(argv=None):
     a = p.parse_args(argv)
     jobs = load_json(a.input, None)
     if jobs is None:
-        raise SystemExit(f"{a.input} не найден - сначала запустите boards/find_boards.py с --sources "
+        raise SystemExit(f"{a.input} не найден - сначала запустите en/find_boards.py с --sources "
                          f"(или ru/find_ru_jobs.py для ru/out/jobs_ru.json)")
     ledger = Ledger(a.ledger)
     todo = [j for j in jobs if j.get("url") and j.get("company") and j.get("title")

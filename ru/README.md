@@ -36,10 +36,10 @@ python3 ru/find_ru_jobs.py --push-jobsync --dry-run
 | Путь | Что |
 |---|---|
 | `ru/config_ru.yaml` | запросы, фильтры (`max_years_required: 5`), источники, AI, JobSync |
-| `resume.txt` (в корне) | краткое резюме для `--ai`, общее с boards (путь — `ai.resume_file` в конфиге, относительно корня) |
+| `resume.txt` (в корне) | краткое резюме для `--ai`, общее с en/ (путь — `ai.resume_file` в конфиге, относительно корня) |
 | `ru/out/jobs_ru.json`, `ru/out/report_ru.md` | результаты последнего запуска |
 | `state/seen_ru.json` | уже виденные вакансии и кэш AI-оценок |
-| `state/jobsync_ledger.json` | общий с boards учёт лимита JobSync |
+| `state/jobsync_ledger.json` | общий с en/ учёт лимита JobSync |
 
 Отправка в JobSync идёт через общий клиент `common/jobsync_push.py`: батчи по 10, проверка
 `find_job` перед добавлением (если `check_duplicates: true`), не больше `budget_per_hour` вызовов в час.

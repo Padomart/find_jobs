@@ -17,11 +17,11 @@ import (
 
 // Scripts are the search scripts the panel runs, relative to the project root.
 var Scripts = map[string]string{
-	"boards": "boards/find_boards.py",
+	"boards": "en/find_boards.py",
 	"ru":     "ru/find_ru_jobs.py",
 }
 
-// DefaultArgs are the flags of the main examples in boards/README.md and ru/README.md.
+// DefaultArgs are the flags of the main examples in en/README.md and ru/README.md.
 var DefaultArgs = map[string]string{
 	"boards": "--hn --hn-months 3 --sources all --remote-only --watchlist",
 	"ru":     "",

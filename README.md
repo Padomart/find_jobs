@@ -4,7 +4,7 @@
 
 | Папка | Что делает | Запуск (из корня папки) |
 |---|---|---|
-| `boards/` | Ищет небольшие зарубежные компании на Greenhouse / Lever / Ashby и готовит списки бордов для автоматизаций JobSync (по 25 на провайдера) | `python3 boards/find_boards.py --hn-thread 50338728 --remote-only` |
+| `en/` | Ищет небольшие зарубежные компании на Greenhouse / Lever / Ashby и готовит списки бордов для автоматизаций JobSync (по 25 на провайдера) | `python3 en/find_boards.py --hn-thread 50338728 --remote-only` |
 | `ru/` | Ищет вакансии на российском рынке (Хабр Карьера, SuperJob, «Работа России», Telegram, Яндекс, VK, МТС) | `python3 ru/find_ru_jobs.py` |
 | `common/` | Общий код: HTTP с ретраями (`httpclient.py`), клиент JobSync MCP (`jobsync_push.py`), фильтры (`filters.py`), файлы состояния (`state.py`) | `python3 common/jobsync_push.py --dry-run` |
 
@@ -17,7 +17,7 @@ SSL на macOS) и `PyYAML` (ru-скрипт без него читает кон
 find_jobs/
 ├── README.md, .gitignore, .env.example
 ├── common/            общий код (пакет: __init__.py, httpclient.py, jobsync_push.py, filters.py, state.py)
-├── boards/            find_boards.py, blacklist.txt, README.md, out/ (результаты)
+├── en/                find_boards.py, blacklist.txt, README.md, out/ (результаты)
 ├── ru/                find_ru_jobs.py, config_ru.yaml, README.md, out/ (результаты)
 └── state/             seen_boards.json, seen_ru.json, jobsync_ledger.json, cache/boards/
 ```
@@ -27,7 +27,7 @@ find_jobs/
 
 ## Как устроены импорты
 
-Скрипты запускаются как обычные файлы: `python3 boards/find_boards.py`, `python3 ru/find_ru_jobs.py`,
+Скрипты запускаются как обычные файлы: `python3 en/find_boards.py`, `python3 ru/find_ru_jobs.py`,
 `python3 common/jobsync_push.py`. Каждая точка входа сама добавляет корень проекта в `sys.path`
 и импортирует `from common import ...`, поэтому запускать можно из любой папки, а пути по умолчанию
 (`out/`, `state/`, конфиг, чёрный список) считаются от расположения скрипта, а не от текущей папки.
@@ -44,13 +44,13 @@ set -a; source .env; set +a
 | Переменная | Кто использует | Зачем |
 |---|---|---|
 | `JOBSYNC_URL`, `JOBSYNC_TOKEN` | `common/jobsync_push.py`, `ru --push-jobsync` | отправка вакансий в JobSync через MCP |
-| `DEEPSEEK_API_KEY` | `boards --ai`, `ru --ai` | AI-оценка вакансий (`common/ai_score.py`) |
+| `DEEPSEEK_API_KEY` | `en --ai`, `ru --ai` | AI-оценка вакансий (`common/ai_score.py`) |
 | `SUPERJOB_KEY` | `ru` (источник superjob) | ключ приложения SuperJob |
 
 ## Фильтры по умолчанию
 
-- Максимум требуемого опыта: 5 лет (`boards --max-years`, `ru/config_ru.yaml: max_years_required`).
-- boards: remote подходит, только если worldwide/anywhere/APAC/Asia/Вьетнам или регион не указан;
+- Максимум требуемого опыта: 5 лет (`en --max-years`, `ru/config_ru.yaml: max_years_required`).
+- en: remote подходит, только если worldwide/anywhere/APAC/Asia/Вьетнам или регион не указан;
   «remote только для одной страны/региона» (США, Индия, Литва, Европа…) отсеивается (`--remote-regions`).
   Переезд — при спонсорстве визы/релокации. Вакансии только в России — никогда.
 - ru: удалёнка, в том числе «по России».
@@ -61,7 +61,7 @@ set -a; source .env; set +a
 от 0 до 10, с уровнем, «Go основной?», короткой причиной и красными флагами. Работает в обоих поисках:
 
 ```bash
-python3 boards/find_boards.py --hn --hn-months 3 --sources all --remote-only --watchlist --ai
+python3 en/find_boards.py --hn --hn-months 3 --sources all --remote-only --watchlist --ai
 ```
 
 ```bash
@@ -72,7 +72,7 @@ python3 ru/find_ru_jobs.py --ai
   уровень, страна, пожелания.
 - Платные запросы — только по прошедшим фильтры вакансиям, не больше `--ai-limit` (40) за запуск;
   оценки кэшируются в `state/ai_scores.json`, повтор бесплатный.
-- boards сортирует борды и вакансии без борда по AI-оценке, ru — вакансии.
+- en сортирует борды и вакансии без борда по AI-оценке, ru — вакансии.
 - В JobSync оценка попадает в шапку описания; `common/jobsync_push.py --min-ai 6` отправляет только
   вакансии с оценкой от 6.
 
@@ -100,4 +100,4 @@ python3 common/jobsync_push.py --resend
 
 Внимание: upsert заменяет теги вакансии целиком на теги из скрипта.
 
-Подробности и флаги — в `boards/README.md` и `ru/README.md`.
+Подробности и флаги — в `en/README.md` и `ru/README.md`.

@@ -11,7 +11,7 @@ find_boards.py - ищет небольшие компании на Greenhouse / 
   --sources remoteok,remotive,himalayas,arbeitnow,jobicy   публичные API вакансий
   --seed файл                             названия, токены или ссылки на борды
 
-Результат (по умолчанию в boards/out/):
+Результат (по умолчанию в en/out/):
   boards_greenhouse.txt, boards_lever.txt, boards_ashby.txt   - по 25 ссылок для JobSync
   report.md       - отчёт: компания, провайдер, подходящие вакансии, remote/Go, ссылка
   boards.json     - все найденные борды с деталями
@@ -22,9 +22,9 @@ Remote-вакансии по умолчанию подходят, только �
 (или регион не указан); "remote только США/Индия/Европа" отсеиваются (--remote-regions).
 
 Примеры (из корня папки):
-  python3 boards/find_boards.py --hn-thread 50338728 --remote-only
-  python3 boards/find_boards.py --hn --hn-months 3 --sources all --remote-only --watchlist
-  python3 boards/find_boards.py --seed companies.txt --max-jobs 40
+  python3 en/find_boards.py --hn-thread 50338728 --remote-only
+  python3 en/find_boards.py --hn --hn-months 3 --sources all --remote-only --watchlist
+  python3 en/find_boards.py --seed companies.txt --max-jobs 40
 """
 import argparse
 import datetime as dt
@@ -1314,14 +1314,14 @@ def build_parser():
     g.add_argument("--ai-limit", type=int, default=40, metavar="N",
                    help="максимум платных AI-запросов за запуск (40); оценки из кэша бесплатны")
     g.add_argument("--blacklist", default=os.path.join(HERE, "blacklist.txt"),
-                   help="файл с крупными/неинтересными компаниями (по умолчанию boards/blacklist.txt)")
+                   help="файл с крупными/неинтересными компаниями (по умолчанию en/blacklist.txt)")
     g.add_argument("--watchlist", action="store_true",
                    help="добавлять в конец списков небольшие компании со стеком Go, даже если сейчас "
                         "подходящих вакансий нет (JobSync поймает будущие)")
     g.add_argument("--direct-only", action="store_true",
                    help="для кандидатов с прямой ссылкой не угадывать токены у других провайдеров")
     g = p.add_argument_group("вывод и состояние")
-    g.add_argument("--out-dir", default=os.path.join(HERE, "out"), help="папка для результатов (по умолчанию boards/out)")
+    g.add_argument("--out-dir", default=os.path.join(HERE, "out"), help="папка для результатов (по умолчанию en/out)")
     g.add_argument("--report", default="report.md", help="имя файла отчёта")
     g.add_argument("--chunks", type=int, default=1,
                    help="сколько файлов по 25 ссылок на провайдера (boards_X.txt, boards_X_2.txt, ...)")

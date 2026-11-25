@@ -1,4 +1,4 @@
-# boards — небольшие компании на Greenhouse / Lever / Ashby
+# en — зарубежный рынок: небольшие компании на Greenhouse / Lever / Ashby
 
 Ищет небольшие компании с вакансиями Go/Python backend уровня Junior/Middle (remote из Вьетнама
 или с релокацией) и готовит списки бордов для автоматизаций JobSync.
@@ -6,18 +6,18 @@
 ## Примеры (из корня папки)
 
 ```bash
-python3 boards/find_boards.py --hn-thread 50338728 --remote-only
+python3 en/find_boards.py --hn-thread 50338728 --remote-only
 ```
 
 ```bash
-python3 boards/find_boards.py --hn --hn-months 3 --sources all --remote-only --watchlist
+python3 en/find_boards.py --hn --hn-months 3 --sources all --remote-only --watchlist
 ```
 
 ```bash
-python3 boards/find_boards.py --seed companies.txt --max-jobs 40
+python3 en/find_boards.py --seed companies.txt --max-jobs 40
 ```
 
-Полный список флагов: `python3 boards/find_boards.py --help`.
+Полный список флагов: `python3 en/find_boards.py --help`.
 
 ## Основные флаги
 
@@ -34,12 +34,12 @@ python3 boards/find_boards.py --seed companies.txt --max-jobs 40
 | `--ai`, `--ai-limit N` | выкл., 40 | AI-оценка подходящих вакансий под `resume.txt` (DeepSeek), сортировка по ней |
 | `--max-jobs N` | 50 | компания «маленькая», если вакансий не больше |
 | `--watchlist` | выкл. | добавлять небольшие компании с Go в стеке без текущих подходящих вакансий |
-| `--blacklist` | `boards/blacklist.txt` | крупные/неинтересные компании |
-| `--out-dir` | `boards/out` | куда писать результаты |
+| `--blacklist` | `en/blacklist.txt` | крупные/неинтересные компании |
+| `--out-dir` | `en/out` | куда писать результаты |
 | `--state` | `state/seen_boards.json` | состояние между запусками |
 | `--cache-dir` | `state/cache/boards` | кэш ответов HN и источников |
 
-## Что появляется в `boards/out/`
+## Что появляется в `en/out/`
 
 | Файл | Что внутри |
 |---|---|
@@ -60,7 +60,7 @@ python3 boards/find_boards.py --seed companies.txt --max-jobs 40
 
 Формат совместим с `jobs_noats.json` (те же ключи: `company`, `title`, `url`, `location`, `remote`,
 `regions`, `go`, `py`, `level`, `years`, `relocation`, `visa`, `posted`, `restrict`, `stale`, `age_days`,
-`text`, `ai` при `--ai`), поэтому файл можно отдать `common/jobsync_push.py --input boards/out/board_jobs.json`.
+`text`, `ai` при `--ai`), поэтому файл можно отдать `common/jobsync_push.py --input en/out/board_jobs.json`.
 Дополнительно:
 
 | Поле | Что |

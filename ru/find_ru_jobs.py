@@ -12,7 +12,7 @@ find_ru_jobs.py - поиск вакансий Go/Backend (junior/middle, уда�
   mts       job.mts.ru - публичный JSON карьерного сайта
 
 Результат: ru/out/jobs_ru.json, ru/out/report_ru.md; учёт уже виденных вакансий - state/seen_ru.json
-(отдельно от state/seen_boards.json скрипта boards/find_boards.py). Учёт лимита JobSync - общий
+(отдельно от state/seen_boards.json скрипта en/find_boards.py). Учёт лимита JobSync - общий
 state/jobsync_ledger.json (лимит 60/час один на все инструменты).
 
 Переменные окружения (все необязательны):

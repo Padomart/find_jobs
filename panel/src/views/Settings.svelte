@@ -53,7 +53,7 @@
   async function saveBl() {
     try {
       await Panel.saveBlacklist(blacklist);
-      toast("boards/blacklist.txt сохранён");
+      toast("en/blacklist.txt сохранён");
     } catch (e) {
       toast(errText(e), { kind: "error" });
     }
@@ -119,7 +119,7 @@
 
     <section class="card block">
       <h3>Скрипты и отправка</h3>
-      <label>Флаги boards/find_boards.py
+      <label>Флаги en/find_boards.py
         <div class="row"><input type="text" class="grow mono" bind:value={s.argsBoards} />
           <button class="ghost" onclick={() => (s!.argsBoards = s!.defaultBoards)}>Из README</button></div>
       </label>
@@ -137,7 +137,7 @@
 
     <section class="card block">
       <h3>Чёрный список компаний</h3>
-      <p class="muted small">boards/blacklist.txt — по одной компании (или ссылке на борд) в строке, # — комментарий.</p>
+      <p class="muted small">en/blacklist.txt — по одной компании (или ссылке на борд) в строке, # — комментарий.</p>
       <textarea class="mono" rows="9" bind:value={blacklist}></textarea>
       <div class="row end"><button onclick={saveBl}>Сохранить список</button></div>
     </section>
